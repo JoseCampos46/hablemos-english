@@ -1,0 +1,49 @@
+name: Construir Hablemos English
+
+on:
+  push:
+    paths:
+      - 'hablemos-english.zip'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  construir:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Descomprimir el proyecto
+        run: |
+          rm -rf proyecto
+          mkdir proyecto
+          unzip -q -o hablemos-english.zip -d proyecto
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+
+      - name: Construir la app
+        working-directory: proyecto
+        env:
+          NUMERO: ${{ github.run_number }}
+        run: gradle assembleRelease --no-daemon --stacktrace
+
+      - name: Ponerle nombre
+        run: cp proyecto/app/build/outputs/apk/release/app-release.apk "HablemosEnglish-${{ github.run_number }}.apk"
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ github.run_number }}
+          name: Hablemos English ${{ github.run_number }}
+          body: App Hablemos English versión ${{ github.run_number }}. Descargue el archivo .apk de abajo e instálelo.
+          files: HablemosEnglish-${{ github.run_number }}.apk
+
+
